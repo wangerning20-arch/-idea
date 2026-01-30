@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>毛选智慧：行动启示录</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C5A059;
+            --bright-gold: #F5DDA9;
+            --dark: #050505;
+            --bg-image: url('mao.jpeg');
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100vh;
+            overflow: hidden;
+            background-color: var(--dark);
+            background-image: radial-gradient(circle, #1a1a1a 0%, #050505 100%);
+            color: var(--gold);
+            font-family: 'Noto Serif SC', serif;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* 优化点1：引导词下移，贴近屏幕底边缘 */
+        .instruction {
+            position: fixed;
+            bottom: 4vh; /* 下移，确保不与卡牌下缘冲突 */
+            width: 100%;
+            display: flex; justify-content: center;
+            font-size: 22px; letter-spacing: 10px; z-index: 100;
+            text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+            animation: breath 3s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes breath {
+            0% { opacity: 0.3; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); text-shadow: 0 0 20px rgba(197, 160, 89, 0.6); }
+            100% { opacity: 0.3; transform: scale(0.98); }
+        }
+
+        /* 优化点2：卡牌阵列整体下移，远离顶端 */
+        .card-grid {
+            margin-top: 15vh; /* 增加到15vh，解决顶端重合问题 */
+            height: 65vh;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px; width: 85%; max-width: 1100px;
+            align-content: center;
+        }
+
+        .card-wrapper { display: flex; justify-content: center; align-items: center; }
+
+        .card {
+            width: 150px; height: 225px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+            border: 1px solid var(--gold);
+            border-radius: 12px;
+            background-color: #111;
+        }
+
+        /* 放大状态：中心点锁定在 50% 高度 */
+        .card.focused {
+            position: fixed;
+            top: 50%; left: 50%;
+            margin-top: -112px; margin-left: -75px;
+            z-index: 2000;
+            transform: scale(2.2);
+            box-shadow: 0 0 100px rgba(0,0,0,1), 0 0 40px rgba(197, 160, 89, 0.3);
+            border: 2px solid var(--gold);
+        }
+
+        .card-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; }
+
+        .card-back { background: var(--bg-image) center/cover no-repeat; z-index: 10; transition: opacity 0.3s; }
+
+        .card-front {
+            background-color: #000;
+            display: flex; align-items: center; justify-content: center;
+            /* 优化点3：底部增加内边距，给上浮的按钮留出空间 */
+            padding: 20px 20px 80px 20px;
+            box-sizing: border-box;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.4s ease-in;
+        }
+
+        .quote-text {
+            color: var(--bright-gold);
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); opacity: 0; visibility: hidden;
+            transition: 0.8s; z-index: 1500;
+        }
+        #overlay.active { opacity: 1; visibility: visible; }
+
+        /* 优化点4：重置按钮上移，彻底离开边框线 */
+        .reset-btn {
+            position: fixed;
+            bottom: 12vh; /* 上移至12vh，进入卡牌黑色缓冲区 */
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gold); color: #000;
+            border: none; padding: 12px 60px;
+            font-size: 18px; font-weight: bold;
+            cursor: pointer; border-radius: 4px;
+            z-index: 3000; display: none;
+            box-shadow: 0 0 25px rgba(197, 160, 89, 0.3);
+        }
+        .reset-btn:hover { background: var(--bright-gold); transform: translateX(-50%) scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div id="overlay"></div>
+    <div class="instruction" id="topText">默念心中的困惑，汲取跨越时空的勇气</div>
+    <div class="card-grid" id="grid"></div>
+    <button class="reset-btn" id="resetBtn" onclick="location.reload()">重新启示</button>
+
+    <script>
+        const quotesPool = [
+            "如果要看前途，一定要看历史。",
+            "我们的任务是过河，但是没有桥或没有船就不能过。不解决桥或船的问题，过河就是一句空话。",
+            "一切新的东西都是从艰苦斗争中锻炼出来的。",
+            "人们往往在“之交”不会变换衣服，要闹出毛病，这就是由于习惯的力量。",
+            "一切会有变化。腐朽的大力量要让位给新生的小力量，力量小的要变成大的。",
+            "问题就是事物的矛盾。哪里有没有解决的矛盾，哪里就有问题。",
+            "我们讨论问题，应当从实际出发，不是从定义出发。",
+            "教条主义是不落地的，它是挂在空中的。飞机飞上天总得落在实地上。",
+            "虽然理想一定要有，但是还要结合一个东西，叫做“现实”。",
+            "世界上的事情就是这样，要走弯路，就是Ｓ形。",
+            "聪明即多问多思，老实即实事求是。持之以恒，总是能够做好事情的。",
+            "看起来很困难，实际上只要认真对待，并不难解决。",
+            "各种经验都要吸取，不要用一个规格到处套。",
+            "真理不在乎是不是清一色。",
+            "我们对问题要分析，不要笼统地一概否定。",
+            "割断历史是不行的，好像什么都是我们白手起家，这种看法是不对的。",
+            "一个矛盾克服了，又一个矛盾产生了。没有矛盾就没有世界。",
+            "没有眼睛向下的兴趣和决心，是一辈子也不会真正懂得事情的。",
+            "人家讲的不是教条，我们读后变成了教条，是因为我们没有读通，不会读。",
+            "我们要熟悉外国的东西，但中国人还是要以自己的东西为主。",
+            "不要靠老资格吃饭，要靠解决问题正确吃饭。靠正确，不靠资格。",
+            "凡是反动的东西，你不打，他就不倒。扫帚不到，灰尘照例不会自己跑掉。",
+            "我们走过了许多弯路。但错误常常是正确的先导。",
+            "错误能帮助人头脑清醒。",
+            "谦虚等于实际。",
+            "吸收那些用得着的东西，拒绝那些用不着的东西，增加那些自己所特有的东西。",
+            "读书是学习，使用也是学习，而且是更重要的学习。",
+            "把别人的经验变成自己的，本领就大了。",
+            "有了正确的观点和思想，还要有比较恰当的表达方式告诉别人。",
+            "经常把几个问题放在心里想一想，同少数人吹一吹，这是一个重要方法。",
+            "当面不说，背后咕哝，最不好。应当选择说话的时机。",
+            "不负责任，怕负责任，不许人讲话，凡是采取这种态度的人，十个就有十个要失败。",
+            "不要怕打开窗户可能吹进沙子来。开窗户透空气的利益很大。",
+            "凡有害的，加以限制；凡无害的，加以利用。",
+            "你不研究反面的东西，就驳不倒它。",
+            "要人家服，只能说服，不能压服。以力服人是不行的。",
+            "用说服的方法代替压服的方法。费的时间不算少，但是这点时间是需要的。",
+            "不好的要给以适当的批评，好的要表扬，但不能捧。",
+            "检讨的目的在于得出经验教训，不在于把责任加在个别同志身上。",
+            "注意收集不同的意见。不团结就是因为有不同的意见而又得不到解决。",
+            "我们不仅要善于团结意见相同的同志，也要善于团结意见不同的同志。",
+            "世界上只有猫和猫做朋友的事，没有猫和老鼠做朋友的事。",
+            "待人以诚而去其诈，待人以宽而去其隘。",
+            "凡有损人利己之心的人，其结果都不妙。",
+            "如果不懂得彼此的心，不知道彼此心里面想些什么，不能够做成知心朋友。",
+            "适可而止，保证已得的胜利。",
+            "如果准备未周，宁可推迟时间。",
+            "一时办不到的事，必须允许逐步去办。",
+            "被迫到被动地位是常有的，重要的是要迅速地恢复主动地位。",
+            "所谓机会主义，就是这里有利就干这件事，那里有利就干那件事，没有原则。",
+            "一波未平一波又起，中间要歇一歇。两山之间有一谷，两波之间有一伏。",
+            "有病不要性急，越急越坏。安心治疗，是为上策。",
+            "没有全局在胸，是不会真的投下一着好棋子的。",
+            "如果局部可行而全局不可行，应局部服从全局。反之亦然。",
+            "系统地解决问题才叫做科学。不是系统的而是零碎的，就不叫科学。",
+            "别人的东西，有些能用，有些不能用，这就作了分析。",
+            "世界上没有不能分析的事物，只是情况不同、性质不同。",
+            "定义是分析的结果，不是分析的出发点。研究问题应该从历史分析开始。",
+            "抄一个时期之后就不要再抄了。毕业之后就要自己当教员。",
+            "在危险环境中表示绝望的人，在黑暗中看不见光明的人，只是懦夫。"
+        ];
+
+        const grid = document.getElementById('grid');
+        const shuffled = [...quotesPool].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 8);
+
+        for (let i = 0; i < 8; i++) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'card-wrapper';
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            let text = selected[i];
+            let fontSize = "18px";
+            let lineHeight = "1.8";
+
+            if (text.length > 40) {
+                fontSize = "13.5px";
+                lineHeight = "1.5";
+            } else if (text.length > 25) {
+                fontSize = "16px";
+                lineHeight = "1.7";
+            }
+
+            card.innerHTML = `
+                <div class="card-face card-back"></div>
+                <div class="card-face card-front">
+                    <div class="quote-text" style="font-size: ${fontSize}; line-height: ${lineHeight}">${text}</div>
+                </div>
+            `;
+
+            card.onclick = function() {
+                if (!this.classList.contains('focused')) focusCard(this);
+            };
+            wrapper.appendChild(card);
+            grid.appendChild(wrapper);
+        }
+
+        function focusCard(selectedCard) {
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('topText').style.animation = 'none';
+            document.getElementById('topText').style.opacity = '0';
+
+            document.querySelectorAll('.card').forEach(c => {
+                if (c !== selectedCard) c.style.opacity = '0';
+            });
+
+            selectedCard.classList.add('focused');
+
+            setTimeout(() => {
+                selectedCard.style.transform = 'translate(0, 0) scale(2.2) scaleX(0)';
+            }, 600);
+
+            setTimeout(() => {
+                const backFace = selectedCard.querySelector('.card-back');
+                const frontFace = selectedCard.querySelector('.card-front');
+                if (backFace) backFace.style.opacity = '0';
+                if (frontFace) frontFace.style.opacity = '1';
+                selectedCard.style.transform = 'translate(0, 0) scale(2.2) scaleX(1)';
+            }, 1000);
+
+            setTimeout(() => {
+                document.getElementById('resetBtn').style.display = 'block';
+            }, 1400);
+        }
+    </script>
+</body>
+</html>
