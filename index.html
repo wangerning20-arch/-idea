@@ -17,20 +17,54 @@
             width: 100%; height: 100vh;
             overflow: hidden;
             background-color: var(--dark);
-            background-image: radial-gradient(circle, #1a1a1a 0%, #050505 100%);
+            /* 基础渐变 */
+            background-image: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
             color: var(--gold);
             font-family: 'Noto Serif SC', serif;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 优化点1：引导词下移，贴近屏幕底边缘 */
+        /* 效果1：动感鎏金层 - 模拟金液流动 */
+        body::after {
+            content: "";
+            position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(
+                45deg,
+                rgba(5, 5, 5, 0) 0%,
+                rgba(75, 58, 26, 0.2) 25%,
+                rgba(197, 160, 89, 0.1) 50%,
+                rgba(75, 58, 26, 0.2) 75%,
+                rgba(5, 5, 5, 0) 100%
+            );
+            background-size: 400% 400%;
+            animation: flowingGold 20s linear infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes flowingGold {
+            0% { transform: rotate(0deg) translate(-5%, -5%); }
+            50% { transform: rotate(5deg) translate(5%, 5%); }
+            100% { transform: rotate(0deg) translate(-5%, -5%); }
+        }
+
+        /* 效果2：金属拉丝质感噪点 */
+        body::before {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         .instruction {
             position: fixed;
-            bottom: 4vh; /* 下移，确保不与卡牌下缘冲突 */
+            bottom: 4vh;
             width: 100%;
             display: flex; justify-content: center;
             font-size: 22px; letter-spacing: 10px; z-index: 100;
-            text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+            text-shadow: 0 0 15px rgba(197, 160, 89, 0.6);
             animation: breath 3s infinite ease-in-out;
             pointer-events: none;
         }
@@ -41,15 +75,15 @@
             100% { opacity: 0.3; transform: scale(0.98); }
         }
 
-        /* 优化点2：卡牌阵列整体下移，远离顶端 */
         .card-grid {
-            margin-top: 15vh; /* 增加到15vh，解决顶端重合问题 */
+            margin-top: 15vh;
             height: 65vh;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(2, 1fr);
             gap: 20px; width: 85%; max-width: 1100px;
             align-content: center;
+            z-index: 10;
         }
 
         .card-wrapper { display: flex; justify-content: center; align-items: center; }
@@ -59,12 +93,11 @@
             position: relative;
             cursor: pointer;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
-            border: 1px solid var(--gold);
+            border: 1px solid rgba(197, 160, 89, 0.3);
             border-radius: 12px;
             background-color: #111;
         }
 
-        /* 放大状态：中心点锁定在 50% 高度 */
         .card.focused {
             position: fixed;
             top: 50%; left: 50%;
@@ -76,13 +109,11 @@
         }
 
         .card-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; }
-
         .card-back { background: var(--bg-image) center/cover no-repeat; z-index: 10; transition: opacity 0.3s; }
 
         .card-front {
             background-color: #000;
             display: flex; align-items: center; justify-content: center;
-            /* 优化点3：底部增加内边距，给上浮的按钮留出空间 */
             padding: 20px 20px 80px 20px;
             box-sizing: border-box;
             z-index: 5;
@@ -95,6 +126,7 @@
             text-align: center;
             font-weight: bold;
             letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
         }
 
         #overlay {
@@ -104,10 +136,9 @@
         }
         #overlay.active { opacity: 1; visibility: visible; }
 
-        /* 优化点4：重置按钮上移，彻底离开边框线 */
         .reset-btn {
             position: fixed;
-            bottom: 12vh; /* 上移至12vh，进入卡牌黑色缓冲区 */
+            bottom: 12vh;
             left: 50%;
             transform: translateX(-50%);
             background: var(--gold); color: #000;
@@ -117,10 +148,11 @@
             z-index: 3000; display: none;
             box-shadow: 0 0 25px rgba(197, 160, 89, 0.3);
         }
-        .reset-btn:hover { background: var(--bright-gold); transform: translateX(-50%) scale(1.05); }
     </style>
 </head>
 <body>
+
+    <audio id="flipSound" src="卡牌翻转_爱给网_aigei_com.mp3" preload="auto"></audio>
 
     <div id="overlay"></div>
     <div class="instruction" id="topText">默念心中的困惑，汲取跨越时空的勇气</div>
@@ -132,7 +164,6 @@
             "如果要看前途，一定要看历史。",
             "我们的任务是过河，但是没有桥或没有船就不能过。不解决桥或船的问题，过河就是一句空话。",
             "一切新的东西都是从艰苦斗争中锻炼出来的。",
-            "人们往往在“之交”不会变换衣服，要闹出毛病，这就是由于习惯的力量。",
             "一切会有变化。腐朽的大力量要让位给新生的小力量，力量小的要变成大的。",
             "问题就是事物的矛盾。哪里有没有解决的矛盾，哪里就有问题。",
             "我们讨论问题，应当从实际出发，不是从定义出发。",
@@ -228,6 +259,13 @@
         }
 
         function focusCard(selectedCard) {
+            // 新增：播放翻牌音效
+            const sound = document.getElementById('flipSound');
+            if (sound) {
+                sound.currentTime = 0; // 重置进度
+                sound.play().catch(e => console.log("播放音效需要用户点击交互"));
+            }
+
             document.getElementById('overlay').classList.add('active');
             document.getElementById('topText').style.animation = 'none';
             document.getElementById('topText').style.opacity = '0';
