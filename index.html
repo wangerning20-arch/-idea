@@ -7,7 +7,7 @@
     <style>
         :root {
             --gold: #C5A059;
-            --bright-gold: #F5DDA9;
+            --bright-gold: #FFF5E0; /* 采用极亮的近白色，对比度最高 */
             --dark: #050505;
             --bg-image: url('mao.jpeg');
         }
@@ -17,64 +17,31 @@
             width: 100%; height: 100vh;
             overflow: hidden;
             background-color: var(--dark);
-            /* 基础渐变 */
             background-image: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
             color: var(--gold);
             font-family: 'Noto Serif SC', serif;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 效果1：动感鎏金层 - 模拟金液流动 */
-        body::after {
-            content: "";
-            position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(
-                45deg,
-                rgba(5, 5, 5, 0) 0%,
-                rgba(75, 58, 26, 0.2) 25%,
-                rgba(197, 160, 89, 0.1) 50%,
-                rgba(75, 58, 26, 0.2) 75%,
-                rgba(5, 5, 5, 0) 100%
-            );
-            background-size: 400% 400%;
-            animation: flowingGold 20s linear infinite;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        @keyframes flowingGold {
-            0% { transform: rotate(0deg) translate(-5%, -5%); }
-            50% { transform: rotate(5deg) translate(5%, 5%); }
-            100% { transform: rotate(0deg) translate(-5%, -5%); }
-        }
-
-        /* 效果2：金属拉丝质感噪点 */
-        body::before {
-            content: "";
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.08;
-            pointer-events: none;
-            z-index: 0;
-        }
-
+        /* 引导语下移 */
         .instruction {
             position: fixed;
             bottom: 4vh;
             width: 100%;
             display: flex; justify-content: center;
             font-size: 22px; letter-spacing: 10px; z-index: 100;
-            text-shadow: 0 0 15px rgba(197, 160, 89, 0.6);
+            text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
             animation: breath 3s infinite ease-in-out;
             pointer-events: none;
         }
 
         @keyframes breath {
             0% { opacity: 0.3; transform: scale(0.98); }
-            50% { opacity: 1; transform: scale(1); text-shadow: 0 0 20px rgba(197, 160, 89, 0.6); }
+            50% { opacity: 1; transform: scale(1); }
             100% { opacity: 0.3; transform: scale(0.98); }
         }
 
+        /* 卡牌阵列下移 */
         .card-grid {
             margin-top: 15vh;
             height: 65vh;
@@ -83,7 +50,6 @@
             grid-template-rows: repeat(2, 1fr);
             gap: 20px; width: 85%; max-width: 1100px;
             align-content: center;
-            z-index: 10;
         }
 
         .card-wrapper { display: flex; justify-content: center; align-items: center; }
@@ -93,7 +59,7 @@
             position: relative;
             cursor: pointer;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
-            border: 1px solid rgba(197, 160, 89, 0.3);
+            border: 1px solid var(--gold);
             border-radius: 12px;
             background-color: #111;
         }
@@ -102,7 +68,7 @@
             position: fixed;
             top: 50%; left: 50%;
             margin-top: -112px; margin-left: -75px;
-            z-index: 2000;
+            z-index: 5000; /* 强制锁定最高层级 */
             transform: scale(2.2);
             box-shadow: 0 0 100px rgba(0,0,0,1), 0 0 40px rgba(197, 160, 89, 0.3);
             border: 2px solid var(--gold);
@@ -116,23 +82,26 @@
             display: flex; align-items: center; justify-content: center;
             padding: 20px 20px 80px 20px;
             box-sizing: border-box;
-            z-index: 5;
+            z-index: 20;
             opacity: 0;
             transition: opacity 0.4s ease-in;
         }
 
+        /* 核心修复：纯实色文字，带黑色轮廓阴影 */
         .quote-text {
             color: var(--bright-gold);
             text-align: center;
             font-weight: bold;
-            letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+            letter-spacing: 1.5px;
+            line-height: 1.8;
+            /* 黑色投影增强文字轮廓，确保在任何背景下可见 */
+            text-shadow: 2px 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
         }
 
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); opacity: 0; visibility: hidden;
-            transition: 0.8s; z-index: 1500;
+            background: rgba(0,0,0,0.95); opacity: 0; visibility: hidden;
+            transition: 0.8s; z-index: 2000;
         }
         #overlay.active { opacity: 1; visibility: visible; }
 
@@ -145,7 +114,7 @@
             border: none; padding: 12px 60px;
             font-size: 18px; font-weight: bold;
             cursor: pointer; border-radius: 4px;
-            z-index: 3000; display: none;
+            z-index: 6000; display: none;
             box-shadow: 0 0 25px rgba(197, 160, 89, 0.3);
         }
     </style>
@@ -160,6 +129,7 @@
     <button class="reset-btn" id="resetBtn" onclick="location.reload()">重新启示</button>
 
     <script>
+        // 删除了特定的一句
         const quotesPool = [
             "如果要看前途，一定要看历史。",
             "我们的任务是过河，但是没有桥或没有船就不能过。不解决桥或船的问题，过河就是一句空话。",
@@ -259,11 +229,11 @@
         }
 
         function focusCard(selectedCard) {
-            // 新增：播放翻牌音效
+            // 播放翻牌声
             const sound = document.getElementById('flipSound');
             if (sound) {
-                sound.currentTime = 0; // 重置进度
-                sound.play().catch(e => console.log("播放音效需要用户点击交互"));
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("等待交互播放音效"));
             }
 
             document.getElementById('overlay').classList.add('active');
